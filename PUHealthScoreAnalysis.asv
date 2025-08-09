@@ -20,14 +20,18 @@ for r = raceNums
             currentHealth = max(0, currentHealth - lapPenalty);
             healthLaps(i) = currentHealth;
         end
+
         startHealth.(driver) = healthLaps(end);
         lapHealth.(driver).(['Race' num2str(r)]) = healthLaps;
     end
 end
+
 % Choose a race to plot lap-by-lap health
 raceToPlot = 1;
+
 lapsANT = length(lapHealth.ANT.(['Race' num2str(raceToPlot)]));
 lapsRUS = length(lapHealth.RUS.(['Race' num2str(raceToPlot)]));
+
 % Plot lap-by-lap health for selected race
 figure('Name', sprintf('Lap-by-Lap Health - Race %d', raceToPlot));
 hold on;
@@ -39,9 +43,11 @@ title(sprintf('Lap-by-Lap Health Comparison - Race %d', raceToPlot));
 legend('Location', 'best');
 grid on;
 hold off;
+
 % Season final lap health arrays
 finalHealthANT = zeros(length(raceNums), 1);
 finalHealthRUS = zeros(length(raceNums), 1);
+
 for r = raceNums
     finalHealthANT(r) = lapHealth.ANT.(['Race' num2str(r)])(end);
     finalHealthRUS(r) = lapHealth.RUS.(['Race' num2str(r)])(end);
