@@ -1,60 +1,85 @@
-drivers = {'ANT', 'RUS'};
-raceNums = 1:14;
-inputFolder = 'C:\Users\berke\OneDrive\Masaüstü\GitHub\PU-Health-Monitor\Synthetic Race Data';
-% Initialize health storage struct
+clear; clc;
+
+% =============================
+% SETTINGS
+% =============================
+Data = 'C:\Users\berke\OneDrive\Masaüstü\GitHub\PU-Health-Monitor\Synthetic Race Data';
+Drivers = {'ANT', 'RUS'}; 
+RaceNames = {'Australia', 'China', 'Japan', 'Bahrain', 'SaudiArabia', 'Miami', 'EmiliaRomagna', 'Monaco', 'Spain', 'Canada', 'Austria', 'GreatBritain', 'Belgium', 'Hungary'};
+raceNum = 1:length(RaceNames);
+% ICE change (reset health to 100 at these races, assumed the gearbox has changed as well
+engineChanges.ANT = {'Miami', 'Canada', 'GreatBritain','Belgium'};
+engineChanges.RUS = {'Miami', 'Canada', 'GreatBritain'};
 lapHealth = struct();
-startHealth = struct('ANT', 100, 'RUS', 100); % initial health for first race
-for r = raceNums
-    for d = 1:length(drivers)
-        driver = drivers{d};
-        % Load race data
-        filename = fullfile(inputFolder, sprintf('%s_R%d_2025_Race_Data_Synthetic.csv', driver, r));
+startHealth = struct('ANT', 100, 'RUS', 100);
+for r = raceNum
+    raceName = RaceNames{r};
+    for d = 1:length(Drivers)
+        driver = Drivers{d};
+        if ismember(raceName, engineChanges.(driver))
+            startHealth.(driver) = 100;
+        end
+
+        filename = fullfile(Data, sprintf('%s_R%d_2025_Race_Data_Synthetic.csv', driver, r));
         data = readtable(filename);
+        penalties = arrayfun(@(lap) CalculateHealthScore(data(data.LapNumber == lap, :)), unique(data.LapNumber));
+        breachCount.(driver)(r) = sum(penalties > 0);
+        % Lap-by-lap health calculation
         uniqueLaps = unique(data.LapNumber);
         healthLaps = zeros(length(uniqueLaps), 1);
         currentHealth = startHealth.(driver);
         for i = 1:length(uniqueLaps)
-            lapNum = uniqueLaps(i);
-            lapData = data(data.LapNumber == lapNum, :);
+            lapData = data(data.LapNumber == uniqueLaps(i), :);
             lapPenalty = CalculateHealthScore(lapData);
             currentHealth = max(0, currentHealth - lapPenalty);
             healthLaps(i) = currentHealth;
         end
         startHealth.(driver) = healthLaps(end);
-        lapHealth.(driver).(['Race' num2str(r)]) = healthLaps;
+        lapHealth.(driver).(raceName) = healthLaps;
     end
 end
-% Choose a race to plot lap-by-lap health
-raceToPlot = 1;
-lapsANT = length(lapHealth.ANT.(['Race' num2str(raceToPlot)]));
-lapsRUS = length(lapHealth.RUS.(['Race' num2str(raceToPlot)]));
-% Plot lap-by-lap health for selected race
-figure('Name', sprintf('Lap-by-Lap Health - Race %d', raceToPlot));
+raceToPlot = 'Australia';
+lapsANT = length(lapHealth.ANT.(raceToPlot));
+lapsRUS = length(lapHealth.RUS.(raceToPlot));
+figure('Name', ['Lap-by-Lap Health - ' raceToPlot]);
 hold on;
-plot(1:lapsANT, lapHealth.ANT.(['Race' num2str(raceToPlot)]), '-o', 'LineWidth', 2, 'DisplayName', 'ANT','Color','b');
-plot(1:lapsRUS, lapHealth.RUS.(['Race' num2str(raceToPlot)]), '-x', 'LineWidth', 2, 'DisplayName', 'RUS','Color','k');
+plot(1:lapsANT, lapHealth.ANT.(raceToPlot), '-o', 'LineWidth', 2, 'DisplayName', 'ANT', 'Color', 'b');
+plot(1:lapsRUS, lapHealth.RUS.(raceToPlot), '-x', 'LineWidth', 2, 'DisplayName', 'RUS', 'Color', 'k');
 xlabel('Lap Number');
 ylabel('Health Score');
-title(sprintf('Lap-by-Lap Health Comparison - Race %d', raceToPlot));
+title(['Lap-by-Lap Health Comparison - ' raceToPlot]);
 legend('Location', 'best');
 grid on;
 hold off;
-% Season final lap health arrays
-finalHealthANT = zeros(length(raceNums), 1);
-finalHealthRUS = zeros(length(raceNums), 1);
-for r = raceNums
-    finalHealthANT(r) = lapHealth.ANT.(['Race' num2str(r)])(end);
-    finalHealthRUS(r) = lapHealth.RUS.(['Race' num2str(r)])(end);
+finalHealthANT = zeros(length(raceNum), 1);
+finalHealthRUS = zeros(length(raceNum), 1);
+for r = raceNum
+    finalHealthANT(r) = lapHealth.ANT.(RaceNames{r})(end);
+    finalHealthRUS(r) = lapHealth.RUS.(RaceNames{r})(end);
 end
-
-% Plot season health progression
-figure('Name', 'PU Health Progression');
+figure('Name', 'Season Health Progression');
 hold on;
-plot(raceNums, finalHealthANT, '-o', 'LineWidth', 2, 'DisplayName', 'ANT','Color','b');
-plot(raceNums, finalHealthRUS, '-x', 'LineWidth', 2, 'DisplayName', 'RUS','Color','k');
-xlabel('Race Number');
+plot(raceNum, finalHealthANT, '-o', 'LineWidth', 2, 'DisplayName', 'ANT', 'Color', 'b');
+plot(raceNum, finalHealthRUS, '-x', 'LineWidth', 2, 'DisplayName', 'RUS', 'Color', 'k');
+xlabel('Race');
 ylabel('Health Score');
 title('Overall Season Health Progression');
+xticks(raceNum);
+xticklabels(RaceNames);
+xtickangle(45);
+legend('Location', 'best');
+grid on;
+hold off;
+figure('Name', 'Breach Count per Race');
+bar(raceNum - 0.15, breachCount.ANT, 0.3, 'b', 'DisplayName', 'ANT');
+hold on;
+bar(raceNum + 0.15, breachCount.RUS, 0.3, 'k', 'DisplayName', 'RUS');
+xlabel('Race');
+ylabel('Number of Breaches');
+title('Breaches per Race');
+xticks(raceNum);
+xticklabels(RaceNames);
+xtickangle(45);
 legend('Location', 'best');
 grid on;
 hold off;
