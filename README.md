@@ -2,21 +2,30 @@
 
 ## Overview
 
-This project is a MATLAB-based Power Unit (PU) Health Monitor designed for Formula 1 race data analysis. It combines real telemetry data extraction using the [FastF1 Python library](https://theoehrly.github.io/Fast-F1/) with synthetic subsystem data generation and health scoring in MATLAB. The goal is to assess the health and driver impact on F1 power units by comparing key telemetry and subsystem parameters.
-
----
+This MATLAB-based project estimates the health of Formula 1 power units throughout a race season using telemetry data. It simulates real-time engine condition monitoring by calculating a health score based on how often key parameters exceed predefined safe thresholds.
 
 ## Features
 
-- Downloads real telemetry data (RPM, throttle, gear, DRS, brake, speed) from official F1 race sessions using FastF1.
-- Exports telemetry data as CSV files for easy import into MATLAB.
-- Generates synthetic subsystem data:
-  - Oil Temperature (random walk + spikes on high throttle)
-  - Coolant Temperature (smooth oscillation)
-  - Battery State of Charge (SOC) with throttle-dependent dips
-- Detects engine shift events and RPM overshoots.
-- Calculates subsystem breach penalties and overall PU health scores per lap.
-- Produces detailed dashboards with plots and summary tables.
-- Designed as a professional, clean codebase demonstrating cross-tool proficiency (Python & MATLAB).
+- Processes telemetry data for multiple drivers and races.
+- Generates synthetic oil and coolant temperature data to complement telemetry.
+- Resets health score to 100 after engine replacements.
+- Calculates lap-by-lap health scores based on breaches of operational limits such as:
+  - RPM above 15,000
+  - Throttle above 95% for over 5 seconds
+  - Oil temperature above 110°C for over 1 second
+  - Coolant temperature above 100°C for over 1 second
+  - Rough gear shifts (±80% deviation from race average delta RPM)
+- Visualizes health trends per lap and over the entire season.
+- Supports analysis of driver impact and component degradation.
+- Can be adapted to assess competitors’ engine performance using public race data.
 
----
+## Limitations and Future Work
+
+- Synthetic temperature data is an approximation and should be replaced with real sensor data where possible.
+- More detailed event detection (e.g., lap-by-lap breach counts) could improve early detection of component degradation.
+- Incorporating realistic degradation models for turbochargers, battery, and hybrid systems would enhance accuracy.
+- Developing a user-friendly interface or automated reporting system would improve usability.
+
+## Conclusion
+
+This project provides a simplified but effective framework for transforming raw race telemetry into actionable insights about power unit health and reliability, laying groundwork for more advanced data-driven engine monitoring tools.
